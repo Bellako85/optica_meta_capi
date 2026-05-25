@@ -1,9 +1,20 @@
-from odoo import models
-from odoo.http import request
+from odoo import fields, models
 
 
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
+
+    x_meta_purchase_sent = fields.Boolean(
+        string='Meta Purchase Sent',
+        copy=False,
+        readonly=True
+    )
+
+    x_meta_purchase_event_id = fields.Char(
+        string='Meta Purchase Event ID',
+        copy=False,
+        readonly=True
+    )
 
     def action_confirm(self):
         res = super().action_confirm()
@@ -12,11 +23,13 @@ class SaleOrder(models.Model):
 
         for order in self:
 
-            partner = order.partner_id
+            if order.x_meta_purchase_sent:
+                continue
+
+            event_id = f'purchase_sale_order_{order.id}'
 
             user_data = meta._meta_build_user_data(
-                partner=partner,
-                request_obj=request if request else None
+                partner=order.partner_id
             )
 
             custom_data = {
@@ -25,9 +38,7 @@ class SaleOrder(models.Model):
                 'content_name': order.name,
             }
 
-            event_id = f'purchase_sale_order_{order.id}'
-
-            meta._meta_send_event(
+            result = meta._meta_send_event(
                 event_name='Purchase',
                 user_data=user_data,
                 custom_data=custom_data,
@@ -35,4 +46,11 @@ class SaleOrder(models.Model):
                 action_source='website'
             )
 
+            if not result.get('error') and not result.get('skipped'):
+                order.sudo().write({
+                    'x_meta_purchase_sent': True,
+                    'x_meta_purchase_event_id': event_id,
+                })
+
+        return res
         return res
