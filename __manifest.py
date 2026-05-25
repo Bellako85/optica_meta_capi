@@ -28,6 +28,7 @@ Features:
     ],
 
     'data': [
+        'security/ir.model.access.csv',
         'views/res_config_settings_views.xml',
     ],
 
@@ -37,6 +38,7 @@ Features:
         ],
     },
 
+    
     'installable': True,
     'application': False,
     'auto_install': False,
