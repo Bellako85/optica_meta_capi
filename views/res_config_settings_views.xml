@@ -1,64 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
-
 <odoo>
-
     <record id="view_res_config_settings_meta_capi" model="ir.ui.view">
         <field name="name">res.config.settings.meta.capi</field>
         <field name="model">res.config.settings</field>
         <field name="inherit_id" ref="base_setup.res_config_settings_view_form"/>
         <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
 
-            <xpath expr="//div[hasclass('settings')]" position="inside">
+                <app data-string="Meta CAPI" string="Meta CAPI" name="meta_capi">
+                    <block title="Meta Conversions API">
+                        <setting string="Enable Meta CAPI">
+                            <field name="meta_capi_enabled"/>
+                        </setting>
 
-                <div class="app_settings_block"
-                     data-string="Meta CAPI"
-                     string="Meta CAPI">
+                        <setting string="Meta Pixel ID">
+                            <field name="meta_pixel_id"/>
+                        </setting>
 
-                    <h2>Meta Conversions API</h2>
+                        <setting string="Meta Access Token">
+                            <field name="meta_access_token" password="True"/>
+                        </setting>
 
-                    <div class="row mt16 o_settings_container">
-
-                        <div class="col-12 col-lg-6 o_setting_box">
-                            <div class="o_setting_left_pane">
-                                <field name="meta_capi_enabled"/>
-                            </div>
-
-                            <div class="o_setting_right_pane">
-                                <label for="meta_capi_enabled"/>
-                                <div class="text-muted">
-                                    Enable Meta Conversions API integration
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-12 col-lg-6 o_setting_box">
-                            <div class="o_setting_right_pane">
-                                <label for="meta_pixel_id"/>
-                                <field name="meta_pixel_id"/>
-                            </div>
-                        </div>
-
-                        <div class="col-12 col-lg-6 o_setting_box">
-                            <div class="o_setting_right_pane">
-                                <label for="meta_access_token"/>
-                                <field name="meta_access_token" password="True"/>
-                            </div>
-                        </div>
-
-                        <div class="col-12 col-lg-6 o_setting_box">
-                            <div class="o_setting_right_pane">
-                                <label for="meta_test_event_code"/>
-                                <field name="meta_test_event_code"/>
-                            </div>
-                        </div>
-
-                    </div>
-
-                </div>
+                        <setting string="Meta Test Event Code">
+                            <field name="meta_test_event_code"/>
+                        </setting>
+                    </block>
+                </app>
 
             </xpath>
-
         </field>
     </record>
-
 </odoo>
