@@ -43,7 +43,7 @@ class SaleOrder(models.Model):
                 user_data=user_data,
                 custom_data=custom_data,
                 event_id=event_id,
-                action_source='website'
+                action_source='system_generated'
             )
 
             if not result.get('error') and not result.get('skipped'):
@@ -52,5 +52,4 @@ class SaleOrder(models.Model):
                     'x_meta_purchase_event_id': event_id,
                 })
 
-        return res
         return res
