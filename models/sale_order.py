@@ -36,6 +36,7 @@ class SaleOrder(models.Model):
                 'value': float(order.amount_total),
                 'currency': order.currency_id.name or 'MXN',
                 'content_name': order.name,
+                'delivery_category': 'in_store',
             }
 
             result = meta._meta_send_event(
@@ -43,7 +44,7 @@ class SaleOrder(models.Model):
                 user_data=user_data,
                 custom_data=custom_data,
                 event_id=event_id,
-                action_source='system_generated'
+                action_source='physical_store'
             )
 
             if not result.get('error') and not result.get('skipped'):
