@@ -2,8 +2,8 @@ import hashlib
 import json
 import logging
 import time
-import requests
 
+import requests
 from odoo import models
 
 _logger = logging.getLogger(__name__)
@@ -15,8 +15,7 @@ class MetaCapiMixin(models.AbstractModel):
 
     def _meta_get_param(self, key, default=False):
         return self.env['ir.config_parameter'].sudo().get_param(
-            f'optica_meta_capi.{key}',
-            default
+            f'optica_meta_capi.{key}', default
         )
 
     def _meta_is_enabled(self):
@@ -31,9 +30,16 @@ class MetaCapiMixin(models.AbstractModel):
     def _meta_clean_phone(self, phone):
         if not phone:
             return False
-        return ''.join(c for c in str(phone) if c.isdigit())
 
-    def _meta_build_user_data(self, partner=None, request_obj=None):
+        phone = ''.join(c for c in str(phone) if c.isdigit())
+
+        # Ajuste para México
+        if phone and not phone.startswith('52'):
+            phone = '52' + phone
+
+        return phone
+
+    def _meta_build_user_data(self, partner=None, request_obj=None, first_name=None, last_name=None):
         user_data = {}
 
         if partner:
@@ -44,7 +50,14 @@ class MetaCapiMixin(models.AbstractModel):
             if phone:
                 user_data['ph'] = [self._meta_hash(phone)]
 
-            user_data['external_id'] = [self._meta_hash(str(partner.id))]
+            if partner.id:
+                user_data['external_id'] = [self._meta_hash(str(partner.id))]
+
+        if first_name:
+            user_data['fn'] = [self._meta_hash(first_name)]
+
+        if last_name:
+            user_data['ln'] = [self._meta_hash(last_name)]
 
         if request_obj:
             user_data['client_ip_address'] = request_obj.httprequest.remote_addr
@@ -60,8 +73,15 @@ class MetaCapiMixin(models.AbstractModel):
 
         return user_data
 
-    def _meta_send_event(self, event_name, user_data, custom_data=None, event_id=None,
-                         event_source_url=None, action_source='website'):
+    def _meta_send_event(
+        self,
+        event_name,
+        user_data,
+        custom_data=None,
+        event_id=None,
+        event_source_url=None,
+        action_source='website'
+    ):
         if not self._meta_is_enabled():
             return {'skipped': True, 'reason': 'Meta CAPI disabled'}
 
@@ -100,7 +120,6 @@ class MetaCapiMixin(models.AbstractModel):
                 json=payload,
                 timeout=20
             )
-
             result = response.json()
 
             _logger.info(
@@ -115,7 +134,6 @@ class MetaCapiMixin(models.AbstractModel):
                 'payload': payload,
                 'response': result,
             }
-
         except Exception as e:
             _logger.exception('Meta CAPI error sending event %s', event_name)
             return {
