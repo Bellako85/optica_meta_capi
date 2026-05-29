@@ -1,4 +1,7 @@
 from odoo import fields, models
+import logging
+
+_logger = logging.getLogger(__name__)
 
 
 class SaleOrder(models.Model):
@@ -23,27 +26,24 @@ class SaleOrder(models.Model):
 
         for order in self:
             if order.x_meta_purchase_sent:
+                _logger.info("META CAPI: orden %s ya estaba enviada", order.name)
                 continue
 
             event_id = f'purchase_sale_order_{order.id}'
 
-            full_name = order.partner_id.name or ''
-            name_parts = full_name.strip().split(' ', 1)
-            first_name = name_parts[0] if name_parts and name_parts[0] else ''
-            last_name = name_parts[1] if len(name_parts) > 1 else ''
-
             user_data = meta._meta_build_user_data(
-                partner=order.partner_id,
-                first_name=first_name,
-                last_name=last_name,
+                partner=order.partner_id
             )
 
             custom_data = {
-                'value': float(order.amount_total),
+                'value': float(order.amount_total or 0.0),
                 'currency': order.currency_id.name or 'MXN',
-                'content_name': order.name,
-                'delivery_category': 'in_store',
             }
+
+            _logger.info("META CAPI: enviando Purchase para orden=%s", order.name)
+            _logger.info("META CAPI: event_id=%s", event_id)
+            _logger.info("META CAPI: user_data=%s", user_data)
+            _logger.info("META CAPI: custom_data=%s", custom_data)
 
             result = meta._meta_send_event(
                 event_name='Purchase',
@@ -53,10 +53,15 @@ class SaleOrder(models.Model):
                 action_source='physical_store'
             )
 
+            _logger.info("META CAPI: result=%s", result)
+
             if not result.get('error') and not result.get('skipped'):
                 order.sudo().write({
                     'x_meta_purchase_sent': True,
                     'x_meta_purchase_event_id': event_id,
                 })
+                _logger.info("META CAPI: Purchase marcado como enviado para %s", order.name)
+            else:
+                _logger.warning("META CAPI: Purchase NO enviado para %s", order.name)
 
         return res
