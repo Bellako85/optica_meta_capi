@@ -39,7 +39,18 @@ class MetaCapiMixin(models.AbstractModel):
 
         return phone
 
-    def _meta_build_user_data(self, partner=None, request_obj=None, first_name=None, last_name=None):
+    def _meta_build_user_data(
+        self,
+        partner=None,
+        request_obj=None,
+        first_name=None,
+        last_name=None,
+        fbp=None,
+        fbc=None,
+        client_ip_address=None,
+        client_user_agent=None,
+        external_id=None,
+    ):
         user_data = {}
 
         if partner:
@@ -50,8 +61,8 @@ class MetaCapiMixin(models.AbstractModel):
             if phone:
                 user_data['ph'] = [self._meta_hash(phone)]
 
-            if partner.id:
-                user_data['external_id'] = [self._meta_hash(str(partner.id))]
+            if partner.id and not external_id:
+                external_id = str(partner.id)
 
         if first_name:
             user_data['fn'] = [self._meta_hash(first_name)]
@@ -59,17 +70,40 @@ class MetaCapiMixin(models.AbstractModel):
         if last_name:
             user_data['ln'] = [self._meta_hash(last_name)]
 
+        if external_id:
+            user_data['external_id'] = [self._meta_hash(str(external_id))]
+
+        # Datos persistidos
+        if client_ip_address:
+            user_data['client_ip_address'] = client_ip_address
+
+        if client_user_agent:
+            user_data['client_user_agent'] = client_user_agent
+
+        if fbp:
+            user_data['fbp'] = fbp
+
+        if fbc:
+            user_data['fbc'] = fbc
+
+        # Fallback a request web
         if request_obj:
-            user_data['client_ip_address'] = request_obj.httprequest.remote_addr
-            user_data['client_user_agent'] = request_obj.httprequest.user_agent.string
+            if not user_data.get('client_ip_address'):
+                user_data['client_ip_address'] = request_obj.httprequest.remote_addr
 
-            fbp = request_obj.httprequest.cookies.get('_fbp')
-            fbc = request_obj.httprequest.cookies.get('_fbc')
+            if not user_data.get('client_user_agent'):
+                ua = request_obj.httprequest.user_agent
+                user_data['client_user_agent'] = ua.string if ua else ''
 
-            if fbp:
-                user_data['fbp'] = fbp
-            if fbc:
-                user_data['fbc'] = fbc
+            if not user_data.get('fbp'):
+                cookie_fbp = request_obj.httprequest.cookies.get('_fbp')
+                if cookie_fbp:
+                    user_data['fbp'] = cookie_fbp
+
+            if not user_data.get('fbc'):
+                cookie_fbc = request_obj.httprequest.cookies.get('_fbc')
+                if cookie_fbc:
+                    user_data['fbc'] = cookie_fbc
 
         return user_data
 
