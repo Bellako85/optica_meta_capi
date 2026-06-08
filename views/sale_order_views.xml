@@ -9,7 +9,7 @@
                         type="object"
                         string="Enviar Purchase a Meta"
                         class="btn-primary"
-                        attrs="{'invisible': [('x_meta_purchase_sent', '=', True)]}"/>
+                        invisible="x_meta_purchase_sent"/>
             </xpath>
 
             <xpath expr="//sheet/notebook" position="inside">
