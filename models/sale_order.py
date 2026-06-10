@@ -32,12 +32,16 @@ class SaleOrder(models.Model):
         self.ensure_one()
         return 'website' if self.x_meta_order_link_opened else 'physical_store'
 
-   # 1. Agregamos el parámetro 'event_name' con el valor por defecto 'Purchase'
     def action_send_purchase_to_meta(self, event_name='Purchase'):
+        """
+        Envía eventos a la Conversions API de Meta.
+        Por defecto actúa como 'Purchase' para no romper compatibilidad,
+        pero permite pasarle cualquier evento de manera dinámica (ej. 'InitiateCheckout').
+        """
         meta = self.env['meta.capi.mixin']
 
         for order in self:
-            # Si es una compra, mantenemos tus validaciones estrictas
+            # --- VALIDACIONES EXCLUSIVAS PARA COMPRAS ---
             if event_name == 'Purchase':
                 if order.x_meta_purchase_sent:
                     raise UserError(f"La orden {order.name} ya fue enviada a Meta.")
@@ -56,11 +60,11 @@ class SaleOrder(models.Model):
                         f"La orden {order.name} no tiene pago o anticipo registrado en una factura posteada."
                     )
 
-            # 2. Volvemos el ID del evento dinámico usando el nombre del evento actual
-            # Esto evita que choquen en Meta si mandas más de un evento de la misma orden
+            # --- CONSTRUCCIÓN DINÁMICA DEL EVENT ID ---
+            # Evita que el ID colisione si mandas más de un evento diferente para la misma orden.
             event_id = f'{event_name.lower()}_sale_order_{order.id}'
 
-            # Captura de datos del cliente (Añadiendo Email y Teléfono limpios)
+            # --- RECOPILACIÓN Y LIMPIEZA DE DATOS DEL CLIENTE ---
             raw_phone = order.partner_id.phone or order.partner_id.mobile or ''
             clean_phone = ''.join(c for c in raw_phone if c.isdigit())
 
@@ -73,12 +77,13 @@ class SaleOrder(models.Model):
                 external_id=str(order.partner_id.id),
             )
             
-            # Inyección dinámica de datos de coincidencia avanzados
+            # Inyección de Email y Teléfono para mejorar el Match con Meta
             if order.partner_id.email:
                 user_data['em'] = order.partner_id.email.strip().lower()
             if clean_phone:
                 user_data['ph'] = clean_phone
 
+            # --- DATOS DEL VALOR DE LA ORDEN ---
             custom_data = {
                 'value': float(order.amount_total or 0.0),
                 'currency': order.currency_id.name or 'MXN',
@@ -87,16 +92,16 @@ class SaleOrder(models.Model):
 
             action_source = order._meta_get_purchase_action_source()
 
-            # Ajustamos los logs para que muestren dinámicamente el nombre del evento
+            # --- LOGS DE CONTROL ---
             _logger.info("META CAPI: enviando evento %s para orden=%s", event_name, order.name)
             _logger.info("META CAPI: event_id=%s", event_id)
             _logger.info("META CAPI: user_data=%s", user_data)
             _logger.info("META CAPI: custom_data=%s", custom_data)
             _logger.info("META CAPI: action_source=%s", action_source)
 
-            # 3. Mapeamos la variable 'event_name' en lugar del texto fijo
+            # --- ENVÍO DEL EVENTO A META ---
             result = meta._meta_send_event(
-                event_name=event_name,  # <--- ¡Ahora es totalmente dinámico!
+                event_name=event_name,  # Totalmente dinámico
                 user_data=user_data,
                 custom_data=custom_data,
                 event_id=event_id,
@@ -106,8 +111,9 @@ class SaleOrder(models.Model):
 
             _logger.info("META CAPI: result=%s", result)
 
+            # --- MANEJO DE RESPUESTA ---
             if not result.get('error') and not result.get('skipped'):
-                # Solo si el evento fue explícitamente un 'Purchase' guardamos el check en Odoo
+                # Solo si el evento fue una compra, guardamos el estado en la base de datos de Odoo
                 if event_name == 'Purchase':
                     order.sudo().write({
                         'x_meta_purchase_sent': True,
@@ -116,5 +122,5 @@ class SaleOrder(models.Model):
             else:
                 raise UserError(
                     f"No se pudo enviar el evento {event_name} a Meta para {order.name}. "
-                    f"Revisa logs del servidor."
+                    f"Revisa los logs del servidor."
                 )
