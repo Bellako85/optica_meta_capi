@@ -77,12 +77,6 @@ class SaleOrder(models.Model):
                 external_id=str(order.partner_id.id),
             )
             
-            # Inyección de Email y Teléfono para mejorar el Match con Meta
-            if order.partner_id.email:
-                user_data['em'] = order.partner_id.email.strip().lower()
-            if clean_phone:
-                user_data['ph'] = clean_phone
-
             # --- DATOS DEL VALOR DE LA ORDEN ---
             custom_data = {
                 'value': float(order.amount_total or 0.0),
