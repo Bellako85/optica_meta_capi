@@ -20,13 +20,13 @@ class SaleOrder(models.Model):
         readonly=True
     )
 
-    x_meta_fbp = fields.Char(copy=False)
-    x_meta_fbc = fields.Char(copy=False)
-    x_meta_client_ip = fields.Char(copy=False)
-    x_meta_user_agent = fields.Char(copy=False)
-    x_meta_event_source_url = fields.Char(copy=False)
-    x_meta_order_link_opened = fields.Boolean(copy=False)
-    x_meta_order_link_opened_at = fields.Datetime(copy=False)
+    x_meta_fbp = fields.Char(string='Meta FBP (Navegador)', copy=False)
+    x_meta_fbc = fields.Char(string='Meta FBC (Clic Anuncio)', copy=False)
+    x_meta_client_ip = fields.Char(string='IP del Cliente', copy=False)
+    x_meta_user_agent = fields.Char(string='Agente de Usuario (Navegador)', copy=False)
+    x_meta_event_source_url = fields.Char(string='URL de Origen', copy=False)
+    x_meta_order_link_opened = fields.Boolean(string='Link Abierto en WhatsApp', copy=False)
+    x_meta_order_link_opened_at = fields.Datetime(string='Fecha de Apertura Link', copy=False)
 
     def _meta_get_purchase_action_source(self):
         self.ensure_one()
