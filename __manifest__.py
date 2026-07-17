@@ -1,19 +1,24 @@
 {
     'name': 'Optica Meta CAPI',
     'version': '17.0.1.0.0',
-    'summary': 'Meta Conversions API integration for Optica Zamora',
+    'summary': 'Integración de Meta Conversions API (CAPI) para Óptica Zamora.',
     'description': """
-Meta Conversions API integration for Odoo 17.
+Módulo personalizado para integrar Odoo con la API de Conversiones de Meta (CAPI).
+=================================================================================
 
-Features:
-- Purchase Events
-- WhatsApp Click Events
-- Lead Events
-- Server-side Meta CAPI
-- Event Deduplication
-- SHA-256 User Hashing
-""",
-    'author': 'Optica Zamora',
+Flujos automatizados y eventos soportados:
+-----------------------------------------
+* **Lead (CRM):** Se dispara automáticamente cuando un prospecto es arrastrado a la etapa de 'Calificado' en el CRM, enviando los datos de contacto del cliente de forma segura.
+* **Schedule (Citas):** Registra el evento de agendación en Meta cuando se envía la invitación por correo electrónico al paciente desde el asistente de citas de la óptica.
+* **Purchase (Ventas):** Envía el evento de compra con el valor real y la moneda al confirmar un presupuesto en el módulo de Ventas.
+
+Características de Seguridad y Optimización:
+--------------------------------------------
+* Encriptación automática de datos personales (correo y teléfono) usando SHA-256 antes del envío.
+* Configuración centralizada desde el panel de Ajustes de Odoo (Token de acceso, Pixel ID, activar/desactivar y código de eventos de prueba).
+* Soporte para eventos del lado del navegador (Pixel) y del servidor (CAPI) para mejorar la calidad de coincidencia.
+    """,
+    'author': 'Bellako85',
     'website': 'https://optica-zamora.com',
     'category': 'Website',
     'license': 'LGPL-3',
@@ -25,6 +30,7 @@ Features:
         'website_sale',
         'crm',
         'sale',
+        'mail',
     ],
 
     'data': [
