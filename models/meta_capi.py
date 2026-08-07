@@ -71,7 +71,7 @@ class MetaCapiMixin(models.AbstractModel):
             user_data['ln'] = [self._meta_hash(last_name)]
 
         if external_id:
-            user_data['external_id'] = [self._meta_hash(str(external_id))]
+            user_data['external_id'] = external_id
 
         # Datos persistidos
         if client_ip_address:
