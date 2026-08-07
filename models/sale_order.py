@@ -61,7 +61,7 @@ class SaleOrder(models.Model):
                     )
 
             # --- CONSTRUCCIÓN DINÁMICA DEL EVENT ID ---
-            # Evita que el ID colisione si mandas más de un evento diferente para la misma orden.
+            # Identificador único del evento para deduplicación en Meta
             event_id=f"purchase_{order.id}"
 
             # --- RECOPILACIÓN Y LIMPIEZA DE DATOS DEL CLIENTE ---
