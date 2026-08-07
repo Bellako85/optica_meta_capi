@@ -8,6 +8,9 @@ from odoo import models
 
 _logger = logging.getLogger(__name__)
 
+GRAPH_API_VERSION = "v23.0"
+REQUEST_TIMEOUT = 20
+
 
 class MetaCapiMixin(models.AbstractModel):
     _name = 'meta.capi.mixin'
@@ -145,7 +148,6 @@ class MetaCapiMixin(models.AbstractModel):
         if test_event_code:
             payload['test_event_code'] = test_event_code
 
-        GRAPH_API_VERSION = "v23.0"
 
         url = f"https://graph.facebook.com/{GRAPH_API_VERSION}/{pixel_id}/events"
 
@@ -156,10 +158,26 @@ class MetaCapiMixin(models.AbstractModel):
                 json=payload,
                 timeout=20
             )
+
+            # Lanza una excepción si Meta devuelve un error HTTP (400, 401, 500, etc.)
+            response.raise_for_status()
+
             result = response.json()
 
+            # Si Meta devuelve advertencias, las registramos
+            if result.get("messages"):
+                _logger.warning(
+                    "META CAPI warnings: %s",
+                    result["messages"]
+                )
+
             _logger.info(
-                'Meta CAPI event sent: %s | payload=%s | response=%s',
+                "META CAPI HTTP %s",
+                response.status_code
+            )
+
+            _logger.info(
+                "Meta CAPI event sent: %s | payload=%s | response=%s",
                 event_name,
                 json.dumps(payload, ensure_ascii=False),
                 result
@@ -170,8 +188,13 @@ class MetaCapiMixin(models.AbstractModel):
                 'payload': payload,
                 'response': result,
             }
+
         except Exception as e:
-            _logger.exception('Meta CAPI error sending event %s', event_name)
+            _logger.exception(
+                "Meta CAPI error sending event %s",
+                event_name
+            )
+
             return {
                 'error': str(e),
                 'payload': payload,
