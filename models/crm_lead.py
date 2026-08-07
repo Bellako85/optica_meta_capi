@@ -75,8 +75,9 @@ class CrmLead(models.Model):
                         )
 
                         event = Event(
-                            event_name="Lead",
+                            event_name="Contact",
                             event_time=int(time.time()),
+                            event_id=f"lead_{lead.id}",
                             user_data=user_data,
                             custom_data=custom_data,
                             action_source="system_generated"
