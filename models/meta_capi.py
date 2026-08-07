@@ -145,7 +145,9 @@ class MetaCapiMixin(models.AbstractModel):
         if test_event_code:
             payload['test_event_code'] = test_event_code
 
-        url = f'https://graph.facebook.com/v19.0/{pixel_id}/events'
+        GRAPH_API_VERSION = "v23.0"
+
+        url = f"https://graph.facebook.com/{GRAPH_API_VERSION}/{pixel_id}/events"
 
         try:
             response = requests.post(
