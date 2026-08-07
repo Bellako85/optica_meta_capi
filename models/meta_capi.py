@@ -8,6 +8,7 @@ from odoo import models
 
 _logger = logging.getLogger(__name__)
 
+# Configuración global
 GRAPH_API_VERSION = "v23.0"
 REQUEST_TIMEOUT = 20
 
@@ -18,7 +19,8 @@ class MetaCapiMixin(models.AbstractModel):
 
     def _meta_get_param(self, key, default=False):
         return self.env['ir.config_parameter'].sudo().get_param(
-            f'optica_meta_capi.{key}', default
+            f'optica_meta_capi.{key}',
+            default,
         )
 
     def _meta_is_enabled(self):
@@ -27,6 +29,7 @@ class MetaCapiMixin(models.AbstractModel):
     def _meta_hash(self, value):
         if not value:
             return False
+
         value = str(value).strip().lower()
         return hashlib.sha256(value.encode('utf-8')).hexdigest()
 
@@ -73,8 +76,9 @@ class MetaCapiMixin(models.AbstractModel):
         if last_name:
             user_data['ln'] = [self._meta_hash(last_name)]
 
+        # NO se hashea (recomendación oficial de Meta)
         if external_id:
-            user_data['external_id'] = external_id
+            user_data['external_id'] = str(external_id)
 
         # Datos persistidos
         if client_ip_address:
@@ -89,7 +93,7 @@ class MetaCapiMixin(models.AbstractModel):
         if fbc:
             user_data['fbc'] = fbc
 
-        # Fallback a request web
+        # Fallback desde request web
         if request_obj:
             if not user_data.get('client_ip_address'):
                 user_data['client_ip_address'] = request_obj.httprequest.remote_addr
@@ -117,17 +121,23 @@ class MetaCapiMixin(models.AbstractModel):
         custom_data=None,
         event_id=None,
         event_source_url=None,
-        action_source='website'
+        action_source='website',
     ):
         if not self._meta_is_enabled():
-            return {'skipped': True, 'reason': 'Meta CAPI disabled'}
+            return {
+                'skipped': True,
+                'reason': 'Meta CAPI disabled',
+            }
 
         pixel_id = self._meta_get_param('meta_pixel_id')
         access_token = self._meta_get_param('meta_access_token')
         test_event_code = self._meta_get_param('meta_test_event_code')
 
         if not pixel_id or not access_token:
-            return {'skipped': True, 'reason': 'Missing Pixel ID or Access Token'}
+            return {
+                'skipped': True,
+                'reason': 'Missing Pixel ID or Access Token',
+            }
 
         payload = {
             'data': [{
@@ -148,7 +158,6 @@ class MetaCapiMixin(models.AbstractModel):
         if test_event_code:
             payload['test_event_code'] = test_event_code
 
-
         url = f"https://graph.facebook.com/{GRAPH_API_VERSION}/{pixel_id}/events"
 
         try:
@@ -156,31 +165,36 @@ class MetaCapiMixin(models.AbstractModel):
                 url,
                 params={'access_token': access_token},
                 json=payload,
-                timeout=20
+                timeout=REQUEST_TIMEOUT,
             )
 
-            # Lanza una excepción si Meta devuelve un error HTTP (400, 401, 500, etc.)
+            # Lanza excepción si Meta responde con HTTP 4xx o 5xx
             response.raise_for_status()
 
             result = response.json()
 
-            # Si Meta devuelve advertencias, las registramos
+            # Advertencias de Meta
             if result.get("messages"):
                 _logger.warning(
                     "META CAPI warnings: %s",
-                    result["messages"]
+                    result["messages"],
                 )
 
             _logger.info(
                 "META CAPI HTTP %s",
-                response.status_code
+                response.status_code,
             )
 
             _logger.info(
-                "Meta CAPI event sent: %s | payload=%s | response=%s",
+                "META CAPI events_received=%s",
+                result.get("events_received", 0),
+            )
+
+            _logger.info(
+                "META CAPI event sent: %s | payload=%s | response=%s",
                 event_name,
                 json.dumps(payload, ensure_ascii=False),
-                result
+                result,
             )
 
             return {
@@ -189,10 +203,21 @@ class MetaCapiMixin(models.AbstractModel):
                 'response': result,
             }
 
+        except requests.exceptions.RequestException as e:
+            _logger.exception(
+                "META CAPI HTTP error sending event %s",
+                event_name,
+            )
+
+            return {
+                'error': str(e),
+                'payload': payload,
+            }
+
         except Exception as e:
             _logger.exception(
-                "Meta CAPI error sending event %s",
-                event_name
+                "META CAPI unexpected error sending event %s",
+                event_name,
             )
 
             return {
