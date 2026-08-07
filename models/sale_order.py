@@ -62,7 +62,7 @@ class SaleOrder(models.Model):
 
             # --- CONSTRUCCIÓN DINÁMICA DEL EVENT ID ---
             # Evita que el ID colisione si mandas más de un evento diferente para la misma orden.
-            event_id = f'{event_name.lower()}_sale_order_{order.id}'
+            event_id=f"purchase_{order.id}"
 
             # --- RECOPILACIÓN Y LIMPIEZA DE DATOS DEL CLIENTE ---
             raw_phone = order.partner_id.phone or order.partner_id.mobile or ''
