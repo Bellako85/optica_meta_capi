@@ -1,0 +1,27 @@
+<odoo>
+    <record id="view_crm_lead_form_meta_capi" model="ir.ui.view">
+        <field name="name">crm.lead.form.meta.capi</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_lead_view_form"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//header" position="inside">
+                <button
+                    name="action_send_contact_to_meta"
+                    type="object"
+                    string="Enviar Contact a Meta"
+                    class="btn-primary"
+                    invisible="stage_id != 2 or x_meta_contact_sent"
+                />
+            </xpath>
+
+            <xpath expr="//sheet" position="inside">
+                <group string="Meta CAPI">
+                    <field name="x_meta_contact_sent"/>
+                    <field name="x_meta_contact_event_id"/>
+                </group>
+            </xpath>
+
+        </field>
+    </record>
+</odoo>
