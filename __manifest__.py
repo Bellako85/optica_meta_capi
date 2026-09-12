@@ -31,6 +31,7 @@ Características de Seguridad y Optimización:
         'crm',
         'sale',
         'mail',
+        'optica_appointment',
     ],
 
     'data': [
