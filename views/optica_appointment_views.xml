@@ -1,0 +1,27 @@
+<odoo>
+    <record id="view_optica_appointment_form_meta_capi" model="ir.ui.view">
+        <field name="name">optica.appointment.form.meta.capi</field>
+        <field name="model">optica.appointment</field>
+        <field name="inherit_id" ref="optica_appointment.view_optica_appointment_form"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//header" position="inside">
+                <button
+                    name="action_send_schedule_to_meta"
+                    type="object"
+                    string="Enviar Schedule a Meta"
+                    class="btn-primary"
+                    invisible="state != 'confirmed' or x_meta_schedule_sent"
+                />
+            </xpath>
+
+            <xpath expr="//sheet" position="inside">
+                <group string="Meta CAPI">
+                    <field name="x_meta_schedule_sent"/>
+                    <field name="x_meta_schedule_event_id"/>
+                </group>
+            </xpath>
+
+        </field>
+    </record>
+</odoo>
