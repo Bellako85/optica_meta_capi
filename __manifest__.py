@@ -39,6 +39,7 @@ Características de Seguridad y Optimización:
         'views/res_config_settings_views.xml',
         'views/sale_order_views.xml',
         'views/optica_appointment_views.xml',
+        'views/crm_lead_views.xml',
     ],
 
     'assets': {
