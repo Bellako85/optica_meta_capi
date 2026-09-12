@@ -1,98 +1,85 @@
-import time
-import logging
-import hashlib
-from odoo import models, fields, api
+from odoo import fields, models
+from odoo.exceptions import UserError
 
-from facebook_business.adobjects.serverside.custom_data import CustomData
-from facebook_business.adobjects.serverside.event import Event
-from facebook_business.adobjects.serverside.event_request import EventRequest
-from facebook_business.adobjects.serverside.user_data import UserData
-from facebook_business.api import FacebookAdsApi
+import logging
 
 _logger = logging.getLogger(__name__)
 
+
 class CrmLead(models.Model):
-    _inherit = 'crm.lead'
+    _inherit = "crm.lead"
 
-    def _hash_data(self, data):
-        if not data:
-            return ""
-        clean_data = str(data).strip().lower()
-        return hashlib.sha256(clean_data.encode('utf-8')).hexdigest()
+    x_meta_contact_sent = fields.Boolean(
+        string="Meta Contact Sent",
+        copy=False,
+        readonly=True,
+    )
 
-    def write(self, vals):
-        res = super(CrmLead, self).write(vals)
-        
-        if 'stage_id' in vals:
-            # Recuperamos primero las configuraciones desde ir.config_parameter
-            config_parameters = self.env['ir.config_parameter'].sudo()
-            
-            # Verificamos si la integración está activa en tus Ajustes
-            meta_enabled = config_parameters.get_param('optica_meta_capi.meta_capi_enabled')
-            if not meta_enabled:
-                _logger.info("META CAPI CRM: Envío omitido porque la integración está desactivada en Ajustes.")
-                return res
+    x_meta_contact_event_id = fields.Char(
+        string="Meta Contact Event ID",
+        copy=False,
+        readonly=True,
+    )
 
-            # Buscamos tu etapa "Calificado" (Asegúrate de que el ID 2 corresponda a tu etapa real)
-            STAGE_CALIFICADO_ID = 2 
+    def action_send_contact_to_meta(self):
+        meta = self.env["meta.capi.mixin"]
 
-            if vals.get('stage_id') == STAGE_CALIFICADO_ID:
-                for lead in self:
-                    try:
-                        # Jalamos los tokens y credenciales dinámicas de tu pantalla de Ajustes
-                        access_token = config_parameters.get_param('optica_meta_capi.meta_access_token') or ''
-                        pixel_id = config_parameters.get_param('optica_meta_capi.meta_pixel_id') or ''
-                        test_event_code = config_parameters.get_param('optica_meta_capi.meta_test_event_code') or ''
+        for lead in self:
+            if lead.x_meta_contact_sent:
+                raise UserError(
+                    f"La oportunidad {lead.name} ya fue enviada a Meta."
+                )
 
-                        if not access_token or not pixel_id:
-                            _logger.error("META CAPI CRM: No se puede enviar el evento porque falta el Access Token o el Pixel ID en los Ajustes.")
-                            continue
+            # En tu base actual, Calificado = ID 2
+            if lead.stage_id.id != 2:
+                raise UserError(
+                    "La oportunidad debe estar en la etapa Calificado "
+                    "antes de enviar Contact a Meta."
+                )
 
-                        # Inicializamos la API con las credenciales de tus Ajustes
-                        FacebookAdsApi.init(access_token=access_token)
+            if not lead.partner_id:
+                raise UserError(
+                    "La oportunidad debe tener un cliente vinculado antes "
+                    "de enviarla a Meta."
+                )
 
-                        # Hasheamos los datos del cliente
-                        email_raw = lead.email_from or ""
-                        phone_raw = lead.phone or ""
+            event_id = f"contact_{lead.id}"
 
-                        email_hash = self._hash_data(email_raw)
-                        phone_hash = self._hash_data(phone_raw)
+            user_data = meta._meta_build_user_data(
+                partner=lead.partner_id,
+                external_id=str(lead.partner_id.id),
+            )
 
-                        if not email_hash and not phone_hash:
-                            _logger.warning("META CAPI CRM: Se omitió el Lead para %s por falta de teléfono y correo.", lead.name)
-                            continue
+            custom_data = {
+                "lead_event_source": "Odoo_CRM",
+                "event_source": "crm",
+                "lead_id": lead.id,
+            }
 
-                        user_data = UserData(
-                            emails=[email_hash] if email_hash else None,
-                            phones=[phone_hash] if phone_hash else None
-                        )
+            _logger.info(
+                "META CAPI: enviando Contact para oportunidad=%s",
+                lead.id,
+            )
+            _logger.info("META CAPI: event_id=%s", event_id)
+            _logger.info("META CAPI: user_data=%s", user_data)
 
-                        custom_data = CustomData(
-                            custom_properties={
-                                'lead_event_source': 'Odoo_CRM',
-                                'event_source': 'crm'
-                            }
-                        )
+            result = meta._meta_send_event(
+                event_name="Contact",
+                user_data=user_data,
+                custom_data=custom_data,
+                event_id=event_id,
+                action_source="system_generated",
+            )
 
-                        event = Event(
-                            event_name="Contact",
-                            event_time=int(time.time()),
-                            event_id=f"lead_{lead.id}",
-                            user_data=user_data,
-                            custom_data=custom_data,
-                            action_source="system_generated"
-                        )
+            _logger.info("META CAPI: result=%s", result)
 
-                        # Construimos la petición agregando el código de prueba si está lleno en tus ajustes
-                        kwargs = {'events': [event], 'pixel_id': pixel_id}
-                        if test_event_code:
-                            kwargs['test_event_code'] = test_event_code
-
-                        event_request = EventRequest(**kwargs)
-                        event_response = event_request.execute()
-                        
-                        _logger.info("META CAPI CRM: Evento 'Lead' enviado con éxito para: %s. Código de prueba usado: %s", lead.name, test_event_code)
-
-                    except Exception as e:
-                        _logger.error("META CAPI CRM ERROR: Falló el envío del lead %s. Motivo: %s", lead.name, str(e))
-        return res
+            if not result.get("error") and not result.get("skipped"):
+                lead.sudo().write({
+                    "x_meta_contact_sent": True,
+                    "x_meta_contact_event_id": event_id,
+                })
+            else:
+                raise UserError(
+                    "No se pudo enviar Contact a Meta. "
+                    "Revisa los logs del servidor."
+                )
