@@ -59,41 +59,41 @@ class OpticaAppointment(models.Model):
                     "La cita debe estar confirmada antes de enviar Schedule a Meta."
                 )
 
-                event_id = f"schedule_{appointment.id}"
+            event_id = f"schedule_{appointment.id}"
 
-                partner = appointment.partner_id
+            partner = appointment.partner_id
 
-                user_data = meta._meta_build_user_data(
-                    partner=partner,
-                    fbp=appointment.x_meta_fbp,
-                    fbc=appointment.x_meta_fbc,
-                    client_ip_address=appointment.x_meta_client_ip,
-                    client_user_agent=appointment.x_meta_user_agent,
-                    external_id=str(partner.id) if partner else None,
-                )
+            user_data = meta._meta_build_user_data(
+                partner=partner,
+                fbp=appointment.x_meta_fbp,
+                fbc=appointment.x_meta_fbc,
+                client_ip_address=appointment.x_meta_client_ip,
+                client_user_agent=appointment.x_meta_user_agent,
+                external_id=str(partner.id) if partner else None,
+            )
 
-                custom_data = {
-                    "appointment_id": appointment.id,
-                    "appointment_date": str(appointment.appointment_date or ""),
-                    "appointment_type": appointment.appointment_type or "",
-                }
+            custom_data = {
+                "appointment_id": appointment.id,
+                "appointment_date": str(appointment.appointment_date or ""),
+                "appointment_type": appointment.appointment_type or "",
+            }
 
-                _logger.info(
-                    "META CAPI: enviando Schedule para cita=%s",
-                    appointment.id,
-                )
-                _logger.info("META CAPI: event_id=%s", event_id)
-                _logger.info("META CAPI: user_data=%s", user_data)
+            _logger.info(
+                "META CAPI: enviando Schedule para cita=%s",
+                appointment.id,
+            )
+            _logger.info("META CAPI: event_id=%s", event_id)
+            _logger.info("META CAPI: user_data=%s", user_data)
 
-                result = meta._meta_send_event(
-                    event_name="Schedule",
-                    user_data=user_data,
-                    custom_data=custom_data,
-                    event_id=event_id,
-                    action_source="system_generated",
-                )
+            result = meta._meta_send_event(
+                event_name="Schedule",
+                user_data=user_data,
+                custom_data=custom_data,
+                event_id=event_id,
+                action_source="system_generated",
+            )
 
-                _logger.info("META CAPI: result=%s", result)
+            _logger.info("META CAPI: result=%s", result)
 
             if not result.get("error") and not result.get("skipped"):
                 appointment.sudo().write({
