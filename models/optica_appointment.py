@@ -65,6 +65,10 @@ class OpticaAppointment(models.Model):
 
             user_data = meta._meta_build_user_data(
                 partner=partner,
+                fbp=appointment.x_meta_fbp,
+                fbc=appointment.x_meta_fbc,
+                client_ip_address=appointment.x_meta_client_ip,
+                client_user_agent=appointment.x_meta_user_agent,
                 external_id=str(partner.id) if partner else None,
             )
 
