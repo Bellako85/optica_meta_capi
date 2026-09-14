@@ -21,6 +21,30 @@ class OpticaAppointment(models.Model):
         readonly=True,
     )
 
+    x_meta_fbp = fields.Char(
+        string="Meta FBP",
+        copy=False,
+        readonly=True,
+    )
+
+    x_meta_fbc = fields.Char(
+        string="Meta FBC",
+        copy=False,
+        readonly=True,
+    )
+
+    x_meta_client_ip = fields.Char(
+        string="IP del cliente",
+        copy=False,
+        readonly=True,
+    )
+
+    x_meta_user_agent = fields.Char(
+        string="Agente de usuario",
+        copy=False,
+        readonly=True,
+    )
+
     def action_send_schedule_to_meta(self):
         meta = self.env["meta.capi.mixin"]
 
