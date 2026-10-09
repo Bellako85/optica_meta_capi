@@ -6,12 +6,13 @@
         <field name="arch" type="xml">
 
             <xpath expr="//header" position="inside">
+                <field name="appointment_origin" invisible="1"/>
                 <button
                     name="action_send_schedule_to_meta"
                     type="object"
                     string="Enviar Schedule a Meta"
                     class="btn-primary"
-                    invisible="state != 'confirmed' or x_meta_schedule_sent"
+                    invisible="state != 'confirmed' or x_meta_schedule_sent or appointment_origin != 'backend'"
                 />
             </xpath>
 
