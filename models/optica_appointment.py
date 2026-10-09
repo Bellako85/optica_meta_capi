@@ -49,17 +49,27 @@ class OpticaAppointment(models.Model):
         meta = self.env["meta.capi.mixin"]
 
         for appointment in self:
+
+            # Evitar enviar eventos de citas creadas en el sitio web.
+            if appointment.appointment_origin != "backend":
+                raise UserError(
+                    "Esta cita proviene del sitio web. "
+                    "El evento Schedule se registra desde la página de gracias."
+                )
+
+            # Evitar enviar dos veces la misma cita.
             if appointment.x_meta_schedule_sent:
                 raise UserError(
                     f"La cita de {appointment.patient_name} ya fue enviada a Meta."
                 )
 
+            # Solo permitir citas confirmadas.
             if appointment.state != "confirmed":
                 raise UserError(
-                    "La cita debe estar confirmada antes de enviar Schedule a Meta."
+                    "La cita debe estar confirmada antes de enviarse a Meta."
                 )
 
-            event_id = f"schedule_{appointment.id}"
+            event_id = f"schedule_manual_{appointment.id}"
 
             partner = appointment.partner_id
 
@@ -79,14 +89,13 @@ class OpticaAppointment(models.Model):
             }
 
             _logger.info(
-                "META CAPI: enviando Schedule para cita=%s",
+                "META CAPI: enviando Schedule_Manual para cita=%s",
                 appointment.id,
             )
             _logger.info("META CAPI: event_id=%s", event_id)
-            _logger.info("META CAPI: user_data=%s", user_data)
 
             result = meta._meta_send_event(
-                event_name="Schedule",
+                event_name="Schedule_Manual",
                 user_data=user_data,
                 custom_data=custom_data,
                 event_id=event_id,
@@ -102,5 +111,6 @@ class OpticaAppointment(models.Model):
                 })
             else:
                 raise UserError(
-                    "No se pudo enviar Schedule a Meta. Revisa los logs del servidor."
+                    "No se pudo enviar el evento a Meta. "
+                    "Revisa los logs del servidor."
                 )
