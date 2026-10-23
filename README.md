@@ -179,7 +179,9 @@ Estas observaciones describen el repositorio y no sustituyen una prueba sobre la
 
 ## Licencia
 
-Existe una discrepancia: [LICENSE](LICENSE) contiene **GNU GPL v3**, mientras que [__manifest__.py](__manifest__.py) declara **LGPL-3**. El mantenedor debe unificar ambas referencias antes de presentar una licencia única del proyecto.
+Este módulo se distribuye bajo **GNU LGPL v3** (SPDX: `LGPL-3.0-only`), coherente con el valor `LGPL-3` de [__manifest__.py](__manifest__.py).
+
+[LICENSE](LICENSE) incluye el texto completo de LGPL v3 y de GPL v3, cuyos términos incorpora LGPL. La inclusión de ambos textos no representa dos licencias alternativas.
 
 ---
 
