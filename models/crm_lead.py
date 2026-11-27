@@ -45,8 +45,11 @@ class CrmLead(models.Model):
 
             event_id = f"contact_{lead.id}"
 
+            names = (lead.partner_id.name or "").split(None, 1)
             user_data = meta._meta_build_user_data(
                 partner=lead.partner_id,
+                first_name=names[0] if names else None,
+                last_name=names[1] if len(names) > 1 else None,
                 external_id=str(lead.partner_id.id),
             )
 
